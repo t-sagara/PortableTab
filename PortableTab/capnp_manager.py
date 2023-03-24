@@ -6,7 +6,7 @@ from logging import getLogger
 import math
 import mmap
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Iterator, Iterable, List, NoReturn, Optional
 
 import capnp
 
@@ -80,7 +80,7 @@ class CapnpManager(object):
     def __del__(self):
         self.unload()
 
-    def unload(self):
+    def unload(self) -> NoReturn:
         """
         Release loaded resources manually,
         including cached PageReaders.
@@ -90,7 +90,7 @@ class CapnpManager(object):
             del reader
 
     @classmethod
-    def load_schema(cls, path: str, as_module: str = None):
+    def load_schema(cls, path: str, as_module: str = None) -> Any:
         """
         Load capnp schema into the name space.
 
@@ -105,6 +105,10 @@ class CapnpManager(object):
         -------
         pycapnp.module
             The assigned module.
+
+        Notes
+        -----
+        - The type of the assigned module is dynamically determined from the file name.
         """
         if as_module is None:
             as_module = Path(path).name.replace(".", "_")
@@ -113,7 +117,7 @@ class CapnpManager(object):
         return cls.modules[as_module]
 
     @classmethod
-    def unload_schema(cls, names: Optional[List[str]] = None):
+    def unload_schema(cls, names: Optional[List[str]] = None) -> NoReturn:
         """
         Unload capnp schema from the name space.
 
@@ -129,7 +133,7 @@ class CapnpManager(object):
 
         cls.modules = {n: m for n, m in cls.modules.items() if m}
 
-    def get_page_mmap(self, page_path: Path):
+    def get_page_mmap(self, page_path: Path) -> mmap.mmap:
         """
         Get mmap object assigned to the page file.
 
@@ -188,7 +192,7 @@ class CapnpTable(CapnpManager):
     def __del__(self):
         self.unload()
 
-    def unload(self):
+    def unload(self) -> NoReturn:
         """
         Release loaded resources manually,
         including the capnp module corresponding to this table.
@@ -219,7 +223,7 @@ class CapnpTable(CapnpManager):
 
         return config
 
-    def set_config(self, config: dict):
+    def set_config(self, config: dict) -> NoReturn:
         """
         Set the contents of the config file of the table.
 
@@ -230,7 +234,15 @@ class CapnpTable(CapnpManager):
         with open(self._get_config_path(), "w") as f:
             json.dump(config, f)
 
-    def load_capnp_file(self):
+    def _load_capnp_file(self) -> NoReturn:
+        """
+        Load the capnp schema assigned to the table.
+
+        Notes
+        -----
+        - This method is automatically called when needed.
+          There is no need to call it explicitly from the user program.
+        """
         config = self.get_config()
         module_name = config["module_name"]
         if module_name not in CapnpManager.modules:
@@ -239,26 +251,62 @@ class CapnpTable(CapnpManager):
                 module_name)
 
     @cache
-    def get_record_type(self):
+    def get_record_type(self) -> Any:
+        """
+        Get the record type.
+
+        Returns
+        -------
+        Any
+            Capnp type name corresponding to a record.
+
+        Notes
+        -----
+        - The type is defined by the schema file name.
+        """
         config = self.get_config()
-        self.load_capnp_file()
+        self._load_capnp_file()
         record_type = getattr(
             CapnpManager.modules[config["module_name"]],
             config["record_type"])
         return record_type
 
     @cache
-    def get_list_type(self):
+    def get_list_type(self) -> Any:
+        """
+        Get the list type.
+
+        Returns
+        -------
+        Any
+            Capnp type name corresponding to a list of records.
+
+        Notes
+        -----
+        - The type is defined by the schema file name.
+        """
         config = self.get_config()
-        self.load_capnp_file()
+        self._load_capnp_file()
         list_type = getattr(
             CapnpManager.modules[config["module_name"]],
             config["list_type"])
         return list_type
 
-    def count_records(self):
+    def count_records(self) -> int:
+        """
+        Count the number of records in the table.
+
+        Returns
+        -------
+        int
+            The number of records.
+
+        Notes
+        -----
+        - This method actually just reads the configuration file.
+        """
         config = self.get_config()
-        return config["length"]
+        return config["count"]
 
     def _get_page_path(self, pos: int) -> Path:
         """
@@ -281,7 +329,22 @@ class CapnpTable(CapnpManager):
     def _write_page(
             self,
             page: int,
-            records: list):
+            records: list) -> NoReturn:
+        """
+        Write a page file.
+
+        Parameters
+        ----------
+        page: int
+            Page number starting from 0.
+        records: list
+            List of records to output in Capnp record type.
+
+        Notes
+        -----
+        - If records is larger than the page size, only the records in the page size
+          are output and the rest of them are ignored.
+        """
         target_records = records[0:self.PAGE_SIZE]
         list_obj = self.get_list_type().new_message()
         records_prop = list_obj.init('records', len(target_records))
@@ -292,9 +355,9 @@ class CapnpTable(CapnpManager):
         with open(page_path, "wb") as f:
             list_obj.write(f)
 
-    def delete(self):
+    def delete(self) -> NoReturn:
         """
-        Delete this table with records.
+        Delete the table with records.
         """
         table_dir = self.get_dir()
         if table_dir.exists():
@@ -304,9 +367,28 @@ class CapnpTable(CapnpManager):
     def create(
             self,
             capnp_schema: str,
-            record_type: str):
+            record_type: str,
+    ) -> Path:
         """
         Create table.
+
+        Parameters
+        ----------
+        capnp_schema: str
+            Record definition written in Capnp schema format.
+        record_type: str
+            Type name of the record (struct) defined in the schema.
+
+        Returns
+        -------
+        Path
+            Directory path where the created tables and schema will be stored.
+
+        Notes
+        -----
+        - Do not include the capnp id in the schema definition.
+        - Even if multiple types are defined, only the type specified
+          as record_type is used.
         """
         table_dir = self.get_dir()
         if table_dir.exists():
@@ -332,14 +414,15 @@ class CapnpTable(CapnpManager):
                 "module_name": self.tablename,
                 "record_type": record_type,
                 "list_type": list_type,
-                "length": 0
+                "count": 0
             }, fp=f)
 
         return table_dir
 
     def get_record(
             self,
-            pos: int):
+            pos: int,
+            as_dict: bool = False) -> Any:
         """
         Get a record from the table at pos.
 
@@ -347,22 +430,32 @@ class CapnpTable(CapnpManager):
         ----------
         pos: int
             Position of the target record.
+        as_dict: bool [False]
+            Specifies whether records are returned in dict format.
+
+        Returns
+        -------
+        Any
+            When "as_dict" is set to True, it returns a dict object.
+            Otherwise, it returns a record_type object.
         """
         page_path = self._get_page_path(pos=pos)
         mmap = self.get_page_mmap(page_path)
         with self.get_list_type().from_bytes(
                 buf=mmap, traversal_limit_in_words=2**64-1) as list_obj:
-            return list_obj.records[pos % self.PAGE_SIZE]
+            record = list_obj.records[pos % self.PAGE_SIZE]
+            if as_dict:
+                return record.to_dict()
 
-    def _get_page_reader(self, pos: int):
-        return PageReader(table=self, pos=pos)
+            return record
 
     def retrieve_records(
             self,
             limit: Optional[int] = None,
-            offset: Optional[int] = None) -> list:
+            offset: Optional[int] = None,
+            as_dict: bool = False) -> Iterator[Any]:
         """
-        Get a generator that retrieves records from the table.
+        Get a iterator that retrieves records from the table.
 
         Paramaters
         ----------
@@ -372,10 +465,14 @@ class CapnpTable(CapnpManager):
         offset: int, optional
             Specifies the number of records to be retrieved from.
             If omitted, the retrieval is performed from the beginning.
+        as_dict: bool [False]
+            Specifies whether records are returned in dict format.
 
         Returns
         -------
-        A record object of the table.
+        Iterator[Any]
+            When "as_dict" is set to True, it returns a iterator of dict.
+            Otherwise, it returns a iterator of record_type object.
         """
         if limit is None:
             limit = self.count_records()
@@ -408,50 +505,52 @@ class CapnpTable(CapnpManager):
 
     def append_records(
             self,
-            records: list) -> bool:
+            records: Iterable[dict]) -> NoReturn:
         """
         Appends a record to the end of the table.
 
         Paramaters
         ----------
-        records: list
-            The list of record.
+        records: Iterable[dict]
+            Iterable to return records sequentially.
         """
-        new_pos = self.count_records()
+        cur_pos = self.count_records()
+        buffer = []
+        record_type = self.get_record_type()
 
-        page_path = self._get_page_path(new_pos)
-        page = math.floor(new_pos / self.PAGE_SIZE)
+        # If the last page file is not full, read its contents
+        # into the buffer.
+        page = math.floor(cur_pos / self.PAGE_SIZE)
         pos = page * self.PAGE_SIZE
-        if new_pos - pos > 0:
-            with open(page_path, "rb") as f:
-                list_obj = self.get_list_type().read(f)
+        if cur_pos - pos > 0:
+            buffer = list(
+                self.retrieve_records(limit=cur_pos - pos, offset=pos)
+            )
 
-            self._write_page(
-                page=page,
-                records=(list_obj.records + records)[:self.PAGE_SIZE])
+        # Add records one by one and output when the number of records
+        # reaches the page size.
+        for record in records:
+            buffer.append(record_type.new_message(**record))
+            cur_pos += 1
+            if len(buffer) == self.PAGE_SIZE:
+                self._write_page(page=page, records=buffer)
+                buffer.clear()
+                page += 1
 
-            new_records = records[self.PAGE_SIZE - len(list_obj.records):]
-            page += 1
-        else:
-            new_records = records[:]
+        # Outputs the records remaining in the buffer.
+        if len(buffer) > 0:
+            self._write_page(page=page, records=buffer)
 
-        while len(new_records) > 0:
-            self._write_page(
-                page=page,
-                records=new_records[0:self.PAGE_SIZE])
-
-            new_records = new_records[self.PAGE_SIZE:]
-            page += 1
-
+        # Adjust record count.
         config = self.get_config()
-        config["length"] += len(records)
+        config["count"] = cur_pos
         self.set_config(config)
 
     def update_records(
             self,
             updates: dict) -> bool:
         """
-        Updates records in a table that has already been output to a file.
+        Updates records in the table that has already been output to a file.
 
         Paramaters
         ----------
@@ -459,8 +558,18 @@ class CapnpTable(CapnpManager):
             A dict whose keys are the positions of records to be updated and
             whose values are the contents to be updated.
 
-            The format of the valuse are a dict of field name/value pairs
+            The format of the values are a dict of field name/value pairs
             to be updated.
+
+        Examples
+        --------
+
+            >>> table.update_records({
+                15: {
+                        "name": "Bernardo de la Paz",
+                        "job": "Professor",
+                },
+            })
 
         Notes
         -----
@@ -487,11 +596,11 @@ class CapnpTable(CapnpManager):
                     list_obj = self.get_list_type().read(
                         f, traversal_limit_in_words=2**64 - 1)
                     records = [r.as_builder() for r in list_obj.records]
-                    # records = list_obj.records
 
+            pos_in_page = pos % self.PAGE_SIZE
             for key, value in new_value.items():
                 setattr(
-                    records[pos % self.PAGE_SIZE],
+                    records[pos_in_page],
                     key, value)
 
         if current_page is not None:
