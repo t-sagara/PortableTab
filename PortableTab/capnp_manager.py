@@ -256,7 +256,7 @@ class CapnpTable(CapnpManager):
             config["list_type"])
         return list_type
 
-    def count(self):
+    def count_records(self):
         config = self.get_config()
         return config["length"]
 
@@ -378,7 +378,7 @@ class CapnpTable(CapnpManager):
         A record object of the table.
         """
         if limit is None:
-            limit = self.count()
+            limit = self.count_records()
 
         offset = 0 if offset is None else offset
 
@@ -417,7 +417,7 @@ class CapnpTable(CapnpManager):
         records: list
             The list of record.
         """
-        new_pos = self.count()
+        new_pos = self.count_records()
 
         page_path = self._get_page_path(new_pos)
         page = math.floor(new_pos / self.PAGE_SIZE)
