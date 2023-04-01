@@ -66,7 +66,7 @@ def load_data(table: CapnpTable, zip_url: str):
     if not datapath.exists():
         import urllib.request
         with urllib.request.urlopen(zip_url) as response, \
-                open(datapath, "w") as fout:
+                open(datapath, "wb") as fout:
             while True:
                 chunk = response.read(8192)
                 if not chunk:

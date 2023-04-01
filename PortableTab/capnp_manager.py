@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from functools import cache
+from functools import lru_cache
 import hashlib
 import json
 from logging import getLogger
@@ -200,7 +200,7 @@ class CapnpTable(CapnpManager):
         super().unload()
         self.__class__.unload_schema(self.tablename)
 
-    @cache
+    @lru_cache
     def get_dir(self) -> Path:
         """
         Get the directory where the table are placed.
@@ -213,7 +213,7 @@ class CapnpTable(CapnpManager):
         """
         return self.get_dir() / "config.json"
 
-    @cache
+    @lru_cache
     def get_config(self) -> Path:
         """
         Get the contents of the config file of the table.
@@ -250,7 +250,7 @@ class CapnpTable(CapnpManager):
                 self.get_dir() / config["capnp_file"],
                 module_name)
 
-    @cache
+    @lru_cache
     def get_record_type(self) -> Any:
         """
         Get the record type.
@@ -271,7 +271,7 @@ class CapnpTable(CapnpManager):
             config["record_type"])
         return record_type
 
-    @cache
+    @lru_cache
     def get_list_type(self) -> Any:
         """
         Get the list type.
