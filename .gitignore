@@ -133,4 +133,4 @@ dmypy.json
 /*.code-workspace
 
 # Test database
-/tests/testdb/
+testdb/

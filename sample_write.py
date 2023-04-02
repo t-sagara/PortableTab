@@ -55,24 +55,13 @@ struct Customer {
     return table
 
 
-def random_read(table: CapnpTable):
-    import random
-    random.seed()
-    for _ in range(10):
-        record = table.get_record(
-            pos=random.randrange(table.count_records()),
-            as_dict=True)
-        print(record)
-
-
 if __name__ == '__main__':
-    datafile = Path.cwd() / "organizations-1000000.csv"
+    db_dir = Path.cwd() / "testdb"
+    datafile = db_dir / "organizations-1000000.csv"
     if not datafile.exists():
-        print("Download csv from \"https://github.com/datablist/sample-csv-files/raw/main/files/organizations/organizations-1000000.zip\"")
+        print("Download csv from \"https://github.com/datablist/sample-csv-files/raw/main/files/organizations/organizations-1000000.zip\"")  # noqa E501
         print(" and extract \"organizations-1000000.csv\" to {}".format(
             datafile))
         exit(1)
 
-    db_dir = Path.cwd() / "testdb"
     customer_table = prepare_table(db_dir, datafile)
-    random_read(customer_table)
