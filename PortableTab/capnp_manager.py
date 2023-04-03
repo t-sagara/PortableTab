@@ -6,9 +6,11 @@ from logging import getLogger
 import math
 import mmap
 from pathlib import Path
-from typing import Any, Iterator, Iterable, List, NoReturn, Optional
+import re
+from typing import Any, Iterator, Iterable, List, Optional
 
 import capnp
+from capnp import KjException
 
 capnp.remove_import_hook()
 logger = getLogger(__name__)
@@ -80,7 +82,7 @@ class CapnpManager(object):
     def __del__(self):
         self.unload()
 
-    def unload(self) -> NoReturn:
+    def unload(self) -> None:
         """
         Release loaded resources manually,
         including cached PageReaders.
@@ -113,11 +115,25 @@ class CapnpManager(object):
         if as_module is None:
             as_module = Path(path).name.replace(".", "_")
 
-        cls.modules[as_module] = capnp.load(f"{path}")
+        try:
+            cls.modules[as_module] = capnp.load(f"{path}")
+        except KjException as e:
+            m = re.search(r"@0x[0-9a-f]{16};", e.description)
+            if m is None:
+                raise e
+
+            with open(path, "r") as f:
+                content = m.group(0) + "\n" + f.read()
+            
+            with open(path, "w") as f:
+                f.write(content)
+
+            return cls.load_schema(path, as_module)
+
         return cls.modules[as_module]
 
     @classmethod
-    def unload_schema(cls, names: Optional[List[str]] = None) -> NoReturn:
+    def unload_schema(cls, names: Optional[List[str]] = None) -> None:
         """
         Unload capnp schema from the name space.
 
@@ -192,7 +208,7 @@ class CapnpTable(CapnpManager):
     def __del__(self):
         self.unload()
 
-    def unload(self) -> NoReturn:
+    def unload(self) -> None:
         """
         Release loaded resources manually,
         including the capnp module corresponding to this table.
@@ -223,7 +239,7 @@ class CapnpTable(CapnpManager):
 
         return config
 
-    def set_config(self, config: dict) -> NoReturn:
+    def set_config(self, config: dict) -> None:
         """
         Set the contents of the config file of the table.
 
@@ -234,7 +250,7 @@ class CapnpTable(CapnpManager):
         with open(self._get_config_path(), "w") as f:
             json.dump(config, f)
 
-    def _load_capnp_file(self) -> NoReturn:
+    def _load_capnp_file(self) -> None:
         """
         Load the capnp schema assigned to the table.
 
@@ -329,7 +345,7 @@ class CapnpTable(CapnpManager):
     def _write_page(
             self,
             page: int,
-            records: list) -> NoReturn:
+            records: list) -> None:
         """
         Write a page file.
 
@@ -355,7 +371,7 @@ class CapnpTable(CapnpManager):
         with open(page_path, "wb") as f:
             list_obj.write(f)
 
-    def delete(self) -> NoReturn:
+    def delete(self) -> None:
         """
         Delete the table with records.
         """
@@ -396,8 +412,7 @@ class CapnpTable(CapnpManager):
             shutil.rmtree(table_dir)  # remove directory with its contents
 
         list_type = f"{record_type}List"
-        capnp_id = hashlib.md5(capnp_schema.encode('utf-8')).hexdigest()
-        capnp_schema = "@0x{};\n".format(capnp_id[0:16]) + capnp_schema + \
+        capnp_schema = capnp_schema + \
             "struct {} {{\n".format(list_type) + \
             "  records @0 :List({});\n".format(record_type) + \
             "}\n"
@@ -416,6 +431,9 @@ class CapnpTable(CapnpManager):
                 "list_type": list_type,
                 "count": 0
             }, fp=f)
+
+        # Load this schema once and generate the ID automatically.
+        self._load_capnp_file()
 
         return table_dir
 
@@ -505,7 +523,7 @@ class CapnpTable(CapnpManager):
 
     def append_records(
             self,
-            records: Iterable[dict]) -> NoReturn:
+            records: Iterable[dict]) -> None:
         """
         Appends a record to the end of the table.
 
