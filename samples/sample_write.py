@@ -56,7 +56,7 @@ struct Customer {
                 by_country[country].append(i)
             else:
                 by_country[country] = [i]
- 
+
             records.append(record)
 
     customers.append_records(records)
@@ -98,6 +98,6 @@ if __name__ == '__main__':
         print("Download csv from \"https://github.com/datablist/sample-csv-files/raw/main/files/organizations/organizations-1000000.zip\"")  # noqa E501
         print(" and extract \"organizations-1000000.csv\" to {}".format(
             datafile))
-        exit(1)
+        exit(0)
 
     customer_table = prepare_tables(db_dir, datafile)

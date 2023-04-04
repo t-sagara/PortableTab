@@ -16,7 +16,15 @@
             "name": "sample_write",
             "type": "python",
             "request": "launch",
-            "program": "sample_write.py",
+            "program": "samples/sample_write.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "sample_write2",
+            "type": "python",
+            "request": "launch",
+            "program": "samples/sample_write2.py",
             "console": "integratedTerminal",
             "justMyCode": true
         },
@@ -24,7 +32,7 @@
             "name": "sample_read",
             "type": "python",
             "request": "launch",
-            "program": "sample_read.py",
+            "program": "samples/sample_read.py",
             "console": "integratedTerminal",
             "justMyCode": true
         }

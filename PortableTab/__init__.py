@@ -1,8 +1,11 @@
-from PortableTab.capnp_manager import CapnpManager, CapnpTable
+from .base_table import BaseTable
+from .capnp_manager import CapnpManager
+from .capnp_table import CapnpTable
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
 
 __all__ = [
-    CapnpManager,
-    CapnpTable,
+    "BaseTable",
+    "CapnpManager",
+    "CapnpTable",
 ]
