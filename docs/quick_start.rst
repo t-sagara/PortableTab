@@ -3,7 +3,7 @@
 Quick Start
 ===========
 
-Here is a brief description of basic usage of PortableTab.
+Here is a brief description of basic usage of *PortableTab*.
 
 Create Table
 ------------

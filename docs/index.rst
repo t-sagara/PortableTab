@@ -6,17 +6,16 @@
 Welcome to PortableTab's documentation!
 =======================================
 
-PortableTab is a library that provides the ability to serialize
-a table with types into a file, and deserialize rows extracted
-from the specified positions in the file.
+PortableTab is a library that allows for serialization of typed tables into a set of files,
+as well as deserialization of specific rows extracted from the files.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   quick_start
    overview
    install
+   quick_start
 
 Modules
 =======
