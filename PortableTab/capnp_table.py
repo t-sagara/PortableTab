@@ -47,7 +47,7 @@ class CapnpTable(CapnpManager):
         super().unload()
         self.__class__.unload_schema(self.tablename)
 
-    @lru_cache
+    @lru_cache(maxsize=128)
     def get_dir(self) -> Path:
         """
         Get the directory where the table are placed.
@@ -60,7 +60,7 @@ class CapnpTable(CapnpManager):
         """
         return self.get_dir() / "config.json"
 
-    @lru_cache
+    @lru_cache(maxsize=128)
     def get_config(self) -> Path:
         """
         Get the contents of the config file of the table.
@@ -97,7 +97,7 @@ class CapnpTable(CapnpManager):
                 self.get_dir() / config["capnp_file"],
                 module_name)
 
-    @lru_cache
+    @lru_cache(maxsize=128)
     def get_record_type(self) -> Any:
         """
         Get the record type.
@@ -118,7 +118,7 @@ class CapnpTable(CapnpManager):
             config["record_type"])
         return record_type
 
-    @lru_cache
+    @lru_cache(maxsize=128)
     def get_list_type(self) -> Any:
         """
         Get the list type.
