@@ -14,6 +14,8 @@ Features
   making the file format portable.
 - Since *PortableTab* uses mmap for file access, it does not consume
   much memory even when handling large tables.
+- Indexes on strings can be created using Marisa-trie.
+  This index also uses mmap to save memory.
 
 Limitations
 -----------
@@ -21,8 +23,6 @@ Limitations
 - Rows can only be retrieved at their specified position.
 - Updating records in a serialized file is possible but very slow.
 - It is not possible to insert rows in the middle of a serialized file.
-- *PortableTab* does not have any data frame functions such as searching,
-  index generation, or sorting.
 
 Comparison with others
 ----------------------

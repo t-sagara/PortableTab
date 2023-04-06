@@ -4,7 +4,9 @@ from logging import getLogger
 import math
 import mmap
 from pathlib import Path
-from typing import Any, Iterator, Iterable, List, Optional
+from typing import Any, Callable, Iterator, Iterable, List, Optional
+
+import marisa_trie
 
 from .capnp_manager import CapnpManager
 
@@ -35,6 +37,7 @@ class CapnpTable(CapnpManager):
         super().__init__(db_dir)
         self.tablename = tablename
         self.readers = {}
+        self.trie_indexes = {}
 
     def __del__(self):
         self.unload()
@@ -461,3 +464,155 @@ class CapnpTable(CapnpManager):
                 page=current_page,
                 records=records
             )
+
+    def create_trie_on(
+        self,
+        attr: str,
+        func: Optional[Callable] = None
+    ) -> None:
+        """
+        Create TRIE index on the specified attribute.
+
+        Paramters
+        ---------
+        attr: str
+            The name of target attribute.
+        func: Callable
+            Function to generate a set of strings to be indexed.
+            If not specified, 'str' will be used.
+
+        Notes
+        -----
+        - The created index is saved in the same directory as
+          the page files with the file name "<attr>.trie".
+        """
+        keys = []
+        values = []
+        for pos in range(self.count_records()):
+            record = self.get_record(pos=pos)
+            if pos == 0 and not hasattr(record, attr):
+                raise ValueError(f"Attribute '{attr}' doesn't exist.")
+
+            if func is None:
+                strings = str(getattr(record, attr))
+            else:
+                strings = func(getattr(record, attr))
+
+            if isinstance(strings, str) and strings != "":
+                keys.append(strings)
+                values.append((pos,))
+            else:
+                for string in strings:
+                    if string != "":
+                        keys.append(string)
+                        values.append((pos,))
+
+        # Create RecordTrie
+        # https://marisa-trie.readthedocs.io/en/latest/tutorial.html#marisa-trie-recordtrie  # noqa: E501
+        trie = marisa_trie.RecordTrie("<L", zip(keys, values))
+        path = self.get_dir() / f"{attr}.trie"
+        trie.save(str(path))
+
+        # Open the trie using mmap.
+        self.open_trie_on(attr)
+
+    def open_trie_on(self, attr: str) -> marisa_trie.RecordTrie:
+        """
+        Open TRIE index on the specified attribute.
+
+        Paramters
+        ---------
+        attr: str
+            The name of target attribute.
+
+        Returns
+        -------
+        RecordTrie
+            The TRIE index.
+
+        Notes
+        -----
+        - The index is mmapped from the file name "<attr>.trie",
+          in the same directory as the page files.
+        """
+        if attr in self.trie_indexes:
+            return self.trie_indexes[attr]
+
+        path = self.get_dir() / f"{attr}.trie"
+        trie = marisa_trie.RecordTrie("<L").mmap(str(path))
+        self.trie_indexes[attr] = trie
+        return trie
+
+    def drop_trie_on(self, attr: str):
+        """
+        Delete TRIE index on the specified attribute.
+
+        Paramters
+        ---------
+        attr: str
+            The name of target attribute.
+
+        Notes
+        -----
+        - Delete any file named "<attr>.trie" in the same directory
+          as the page files.
+        - If the index is already loaded, unload it.
+        """
+        path = self.get_dir() / f"{attr}.trie"
+        if path.exists():
+            path.unlink()
+
+        if attr in self.trie_indexes:
+            del self.trie_indexes[attr]
+
+    def search_records_on(
+            self,
+            attr: str,
+            value: str,
+            funcname: str = "get") -> list:
+        """
+        Search value from the table on the specified attribute.
+
+        Paramters
+        ---------
+        attr: str
+            The name of target attribute.
+        value: str
+            The target value.
+        funcname: str
+            The name of search method.
+            - "get" searches for records that exactly match the value.
+            - "prefixes" searches for records that contained in the value.
+            - "keys" searches for records that containing the value.
+
+        Returns
+        -------
+        List[Record]
+            List of records.
+
+        Notes
+        -----
+        - TRIE index must be created on the column before searching.
+        - The TRIE index file will be automatically opened if it exists.
+        """
+        if funcname not in ("get", "prefixes", "keys"):
+            raise ValueError("'func' must be 'get', 'prefixes' or 'keys'.")
+
+        trie = self.open_trie_on(attr)
+        positions = []
+        if funcname == "get":
+            positions = trie.get(value, [])
+        elif funcname == "prefixes":
+            for v in trie.prefixes(value):
+                positions += trie.get(v, [])
+
+        elif funcname == "keys":
+            for v in trie.keys(value):
+                positions += trie.get(v, [])
+
+        records = []
+        pos_tuples = set([p[0] for p in positions])
+        for pos in pos_tuples:
+            records.append(self.get_record(pos=pos))
+
+        return records
