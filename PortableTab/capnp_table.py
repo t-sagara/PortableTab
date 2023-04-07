@@ -486,30 +486,30 @@ class CapnpTable(CapnpManager):
         - The created index is saved in the same directory as
           the page files with the file name "<attr>.trie".
         """
-        keys = []
-        values = []
-        for pos in range(self.count_records()):
-            record = self.get_record(pos=pos)
-            if pos == 0 and not hasattr(record, attr):
-                raise ValueError(f"Attribute '{attr}' doesn't exist.")
 
-            if func is None:
-                strings = str(getattr(record, attr))
-            else:
-                strings = func(getattr(record, attr))
+        def kvgen():
+            # Generator function to enumerate sets of
+            # attribute value and position.
+            for pos in range(self.count_records()):
+                record = self.get_record(pos=pos)
+                if pos == 0 and not hasattr(record, attr):
+                    raise ValueError(f"Attribute '{attr}' doesn't exist.")
 
-            if isinstance(strings, str) and strings != "":
-                keys.append(strings)
-                values.append((pos,))
-            else:
-                for string in strings:
-                    if string != "":
-                        keys.append(string)
-                        values.append((pos,))
+                if func is None:
+                    strings = str(getattr(record, attr))
+                else:
+                    strings = func(getattr(record, attr))
+
+                if isinstance(strings, str) and strings != "":
+                    yield (strings, (pos,))
+                else:
+                    for string in strings:
+                        if string != "":
+                            yield (string, (pos,))
 
         # Create RecordTrie
         # https://marisa-trie.readthedocs.io/en/latest/tutorial.html#marisa-trie-recordtrie  # noqa: E501
-        trie = marisa_trie.RecordTrie("<L", zip(keys, values))
+        trie = marisa_trie.RecordTrie("<L", kvgen())
         path = self.get_dir() / f"{attr}.trie"
         trie.save(str(path))
 

@@ -29,6 +29,14 @@
             "justMyCode": true
         },
         {
+            "name": "sample_trie",
+            "type": "python",
+            "request": "launch",
+            "program": "samples/sample_trie_index.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "sample_read",
             "type": "python",
             "request": "launch",

@@ -6,7 +6,7 @@ Install
 Requirements
 ------------
 
-PortableTab requires Python 3.7 or later.
+*PortableTab* requires Python 3.7 or later.
 
 We have confirmed that it works on Ubuntu, MacOS, and Windows 11.
 

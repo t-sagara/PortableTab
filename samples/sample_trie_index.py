@@ -42,14 +42,18 @@ if __name__ == '__main__':
     customers = CustomerTable(db_dir=db_dir)
 
     # Create TRIE index on "name"
-    # customers.create_trie_on("name")
-    # print(customers.search_records_on(attr="name", value="Griffin"))
-    # print(customers.search_records_on(
-    #     attr="name", value="Griffin", funcname="keys"))
+    customers.create_trie_on("name")
+    # Search for records whose name is "Griffin"
+    print(customers.search_records_on(attr="name", value="Griffin"))
+    # Search for records whose name starts with "Griffin" 
+    print(customers.search_records_on(
+        attr="name", value="Griffin", funcname="keys"))
 
-    # Create TRIE index on "industry" with function
+    # Create TRIE index on "industry" using lambda function
     customers.create_trie_on(
         attr="industry",
         func=lambda x: re.split(r'\s*/\s*', x)
     )
+    # Search for records that contain "Family Services" in
+    # the industry set.
     print(customers.search_records_on("industry", "Family Services"))
