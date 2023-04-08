@@ -46,3 +46,7 @@ Unstable alpha version.
 ## License
 
 This package is available according to the MIT license.
+
+## Author
+
+Takeshi SAGARA <sagara@info-proto.com>

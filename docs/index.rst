@@ -14,7 +14,6 @@ as well as deserialization of specific rows extracted from the files.
    :caption: Contents:
 
    overview
-   install
    quick_start
 
 Modules

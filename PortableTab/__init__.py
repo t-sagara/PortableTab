@@ -2,7 +2,7 @@ from .base_table import BaseTable
 from .capnp_manager import CapnpManager
 from .capnp_table import CapnpTable
 
-__version__ = '0.3.0rc1'
+__version__ = '0.3.0rc2'
 
 __all__ = [
     "BaseTable",

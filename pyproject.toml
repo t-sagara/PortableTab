@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "PortableTab"
-version = "0.3.0rc1"
+version = "0.3.0rc2"
 description = "Python package for serializing tables in portable format with Capnp."
 authors = ["Takeshi Sagara <sagara@info-proto.com>"]
 license = "MIT"

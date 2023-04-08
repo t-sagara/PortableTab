@@ -491,7 +491,8 @@ class CapnpTable(CapnpManager):
             # Generator function to enumerate sets of
             # attribute value and position.
             for pos in range(self.count_records()):
-                record = self.get_record(pos=pos)
+                record = CapnpTable.get_record(
+                    self, pos=pos)  # Call base class method
                 if pos == 0 and not hasattr(record, attr):
                     raise ValueError(f"Attribute '{attr}' doesn't exist.")
 
@@ -543,7 +544,7 @@ class CapnpTable(CapnpManager):
         self.trie_indexes[attr] = trie
         return trie
 
-    def drop_trie_on(self, attr: str):
+    def delete_trie_on(self, attr: str):
         """
         Delete TRIE index on the specified attribute.
 
