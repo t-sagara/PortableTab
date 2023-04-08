@@ -4,7 +4,7 @@ from logging import getLogger
 import math
 import mmap
 from pathlib import Path
-from typing import Any, Callable, Iterator, Iterable, List, Optional
+from typing import Any, Callable, Iterator, Iterable, Optional
 
 import marisa_trie
 
