@@ -15,16 +15,17 @@ as well as deserialization of specific rows extracted from the files.
 
    overview
    quick_start
+   cli
 
 Modules
 =======
 
 .. toctree::
-   :maxdepth: 4
+   :maxdepth: 1
 
    PortableTab.base_table
-   PortableTab.capnp_manager
    PortableTab.capnp_table
+   PortableTab.capnp_manager
 
 Indices and tables
 ==================

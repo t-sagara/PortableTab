@@ -10,6 +10,14 @@ extracted from the files.
 Features
 --------
 
+The serialized files are independent of OS and CPU architecture, so it can
+be used to create portable table which is useful when working with large
+datasets that need to be shared between different systems or environments.
+
+It also allows fast deserialization of only specified rows without loading
+the entire table into memory, so it does not take time to load and
+deserialize the table on the first access, nor consume memory during execution.
+
 - `Capn' Proto <https://capnproto.org/>`_ is used for serialization,
   making the file format portable.
 - Since *PortableTab* uses mmap for file access, it does not consume
@@ -19,6 +27,9 @@ Features
 
 Limitations
 -----------
+
+The tables are serialized into compact files so they cannot be dynamically
+modified.
 
 - Rows can only be retrieved at their specified position.
 - Updating records in a serialized file is possible but very slow.
@@ -39,9 +50,10 @@ Comparison with others
 
 - Pickle
 
-   Pickle is another format for serialization that encodes data into byte strings,
-   resulting in smaller file sizes than JSON. Unlike JSON, it can serialize
-   not only simple strings and numbers but also complex Python objects.
+   Pickle is another format for serialization that encodes data into
+   byte strings, resulting in smaller file sizes than JSON.
+   Unlike JSON, it can serialize not only simple strings and numbers
+   but also complex Python objects.
    
    However, one limitation of Pickle is that it reads the entire file at once
    during deserialization, which can consume a significant amount of memory
@@ -51,7 +63,7 @@ Comparison with others
 
    RDBMS is often the best option for random access to large tables due to
    its advanced search capabilities and ability to perform data updates.
-   In particular, SQLite is a good alternative to *PortableTab* in many cases
+   In particular, *SQLite* is a good alternative to *PortableTab* in many cases
    since it manages databases as portable files.
    
    However, *PortableTab* has certain advantages over SQLite: it is faster

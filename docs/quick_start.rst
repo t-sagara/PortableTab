@@ -47,8 +47,9 @@ Next, create this table under the specified directory.
     >>> sample_table.create()
     PosixPath('db/sample')
 
-The `create()` method creates a subdirectory with
-the table name (`sample`) under the specified directory `./db`.
+The :py:meth:`~PortableTab.base_table.BaseTable.create` method creates
+a subdirectory with the table name ``sample`` under the specified
+directory ``./db``.
 It also places the table definition and other files in it.
 
 Finally, prepare a set of records and register them into the table.
@@ -71,8 +72,9 @@ Open the table by specifying the directory.
 
     >>> sample_table = SampleTable(db_dir="./db")
 
-If the code that wants to read the table does not have the define of
-`SampleTable` class, the base `CapnpTable` class can be used instead.
+If the code that wants to read the table does not have the definition of
+``SampleTable`` class, the base :py:class:`~PortableTab.capnp_table.CapnpTable`
+class can be used instead.
 
 .. code-block:: python
 
@@ -93,44 +95,54 @@ by specifying the position of rows (0 origin).
     {'name': 'Alexa', 'email': 'alexa@bar.net'}
 
 
-Use TRIE index
---------------
+TRIE index
+----------
 
-You can create a TRIE index for any attribute.
+You can create a TRIE index for any attribute using
+:py:meth:`~PortableTab.capnp_table.CapnpTable.create_trie_on`.
 
 .. code-block:: python
 
     >>> sample_table.create_trie_on('name')
 
-Once an index is created, records can be searched by their attributes.
+Once an index is created, records can be searched by their attributes using
+:py:meth:`~PortableTab.capnp_table.CapnpTable.search_records_on`.
 
 .. code-block:: python
 
-    >>> sample_table.search_records_on('name', 'Alice')
+    >>> sample_table.search_records_on(attr='name', value='Alice')
     [<sample.capnp:SampleRecord reader (name = "Alice", email = "alice@foo.org")>]
 
-You can also search for records that begin with a specified string
-or match the leading portion of a specified string.
+You can also search for records that begin with a specified string,
+or match the leading portion of a specified string, specifying
+``funcname`` parameter of that method.
 
 .. code-block:: python
 
-    >>> sample_table.search_records_on('name', 'A', 'keys')
+    >>> sample_table.search_records_on(attr='name', value='A', funcname='keys')
     [<sample.capnp:SampleRecord reader (name = "Alice", email = "alice@foo.org")>, <sample.capnp:SampleRecord reader (name = "Alexa", email = "alexa@bar.net")>]
-    >>> sample_table.search_records_on('name', 'Bobson', 'prefixes')
+    >>> sample_table.search_records_on(attr='name', value='Bobson', funcname='prefixes')
     [<sample.capnp:SampleRecord reader (name = "Bob", email = "bob@example.com")>]
 
 Attributes that have not been indexed are not searchable.
 
+.. note::
+
+    Indexes that search by arithmetic relationship of values (e.g., b-tree)
+    are not yet implemented.
+
 Delete index and tables
 -----------------------
 
-You can delete unnecessary indexes.
+You can delete unnecessary indexes using
+:py:meth:`~PortableTab.capnp_table.CapnpTable.delete_trie_on`.
 
 .. code-block:: python
 
     >>> sample_table.delete_trie_on('name')
 
-The table can be deleted as follows.
+The table can be deleted using
+:py:meth:`~PortableTab.capnp_table.CapnpTable.delete`.
 
 .. code-block:: python
 
