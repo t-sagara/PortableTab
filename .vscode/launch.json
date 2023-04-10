@@ -59,6 +59,18 @@
             "program": "samples/sample_read.py",
             "console": "integratedTerminal",
             "justMyCode": true
+        },
+        {
+            "name": "Python: dataset",
+            "type": "python",
+            "request": "launch",
+            "module": "PortableTab",
+            "args": [
+                "dump",
+                "--db-dir=../jageocoder-converter/db_fukushima",
+                "dataset"
+            ],
+            "justMyCode": false
         }
     ]
 }

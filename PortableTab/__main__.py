@@ -21,7 +21,7 @@ Usage:
 Options:
   -h --help        Show this help.
   -v --version     Show version number.
-  --db-dir=<dir>   Specify dictionary directory. [default: "."]
+  --db-dir=<dir>   Specify dictionary directory.
   -f <from>        The first line number to dump. [default: 0]
   -n <lines>       The number of lines to dump.  [default: 10]
   -t <to>          The last line number + 1 to dump.
@@ -38,16 +38,22 @@ Examples:
 
 """.format(p='portabletab')  # noqa: E501
 
+
 def dump_table(
-    db_dir: Path,
     tablename: str,
+    db_dir: Optional[Path],
     f: Optional[int],
     n: Optional[int],
     t: Optional[int] = None
 ) -> None:
     """
     Dump table.
-    """    
+    """
+    if db_dir is None:
+        db_dir = Path.cwd()
+    else:
+        db_dir = Path(db_dir)
+
     writer = csv.writer(sys.stdout)
     labels = None
     table = CapnpTable(
@@ -58,6 +64,8 @@ def dump_table(
     if t is None:
         t = f + n
 
+    t = min(t, table.count_records())
+
     for pos in range(f, t):
         record = table.get_record(pos=pos, as_dict=True)
         if labels is None:
@@ -66,10 +74,15 @@ def dump_table(
 
         writer.writerow(record.values())
 
+
 def list_tables(
     db_dir: Path
 ) -> None:
-    db_dir = Path(db_dir)
+    if db_dir is None:
+        db_dir = Path.cwd()
+    else:
+        db_dir = Path(db_dir)
+
     for confpath in db_dir.glob('*/config.json'):
         tablepath = confpath.parent
         try:
@@ -105,10 +118,10 @@ def main():
             tablename=args["<tablename>"],
             f=int(args["-f"]),
             n=int(args["-n"]),
-            t=int(args["-t"]) if args["-t"] else None 
+            t=int(args["-t"]) if args["-t"] else None
         )
         exit(0)
-    
+
     if args['list']:
         list_tables(
             db_dir=args["--db-dir"]
