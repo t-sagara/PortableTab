@@ -8,6 +8,7 @@ from typing import Any, Callable, Iterator, Iterable, Optional
 
 import marisa_trie
 
+from .exceptions import NoIndexError
 from .capnp_manager import CapnpManager
 
 logger = getLogger(__name__)
@@ -540,6 +541,9 @@ class CapnpTable(CapnpManager):
             return self.trie_indexes[attr]
 
         path = self.get_dir() / f"{attr}.trie"
+        if not path.exists():
+            raise NoIndexError(f"Index '{path}' doesn't exist.")
+
         trie = marisa_trie.RecordTrie("<L").mmap(str(path))
         self.trie_indexes[attr] = trie
         return trie

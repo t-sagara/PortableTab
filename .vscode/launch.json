@@ -5,7 +5,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Module",
+            "name": "Python: Module (dump)",
             "type": "python",
             "request": "launch",
             "module": "PortableTab",
@@ -17,6 +17,32 @@
                 "-n",
                 "5",
                 "customer"
+            ],
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Module (list)",
+            "type": "python",
+            "request": "launch",
+            "module": "PortableTab",
+            "args": [
+                "list",
+                "--db-dir=testdb",
+            ],
+            "justMyCode": true
+        },
+        {
+            "name": "Python: Module (search)",
+            "type": "python",
+            "request": "launch",
+            "module": "PortableTab",
+            "args": [
+                "search",
+                "--db-dir=testdb",
+                "--prefixes",
+                "customer",
+                "name",
+                "Griffith and Sons"
             ],
             "justMyCode": true
         },

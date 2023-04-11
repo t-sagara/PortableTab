@@ -17,6 +17,7 @@ Usage:
   {p} -v
   {p} dump [--db-dir=<dir>] [-f <from>] ([-n <lines>] | [-t <to>]) <tablename>
   {p} list [--db-dir=<dir>]
+  {p} search [--db-dir=<dir>] ([--keys | --prefixes]) <tablename> <attr> <value>
 
 Options:
   -h --help        Show this help.
@@ -25,6 +26,8 @@ Options:
   -f <from>        The first line number to dump. [default: 0]
   -n <lines>       The number of lines to dump.  [default: 10]
   -t <to>          The last line number + 1 to dump.
+  --keys           Search for records that start with value.
+  --prefixes       Search for records with common prefixes to value.
 
 Examples:
 
@@ -36,15 +39,19 @@ Examples:
 
   {p} dump --db-dir=testdb -f 10 -n 20 customer
 
+- Search for "customer" records whose "name" starts with "Griffith"
+
+  {p} search --db-dir=testdb --keys customer name Griffith
+
 """.format(p='portabletab')  # noqa: E501
 
 
 def dump_table(
     tablename: str,
-    db_dir: Optional[Path],
     f: Optional[int],
     n: Optional[int],
-    t: Optional[int] = None
+    t: Optional[int] = None,
+    db_dir: Optional[Path] = None,
 ) -> None:
     """
     Dump table.
@@ -54,8 +61,6 @@ def dump_table(
     else:
         db_dir = Path(db_dir)
 
-    writer = csv.writer(sys.stdout)
-    labels = None
     table = CapnpTable(
         db_dir=db_dir,
         tablename=tablename
@@ -66,6 +71,8 @@ def dump_table(
 
     t = min(t, table.count_records())
 
+    writer = csv.writer(sys.stdout)
+    labels = None
     for pos in range(f, t):
         record = table.get_record(pos=pos, as_dict=True)
         if labels is None:
@@ -105,6 +112,59 @@ def list_tables(
             pass
 
 
+def search_records(
+    tablename: str,
+    attr: str,
+    value: str,
+    db_dir: Optional[Path] = None,
+    funcname: str = "get"
+) -> None:
+    """
+    Search for records.
+
+    Parameters
+    ----------
+    tablename: str
+        Name of the target table.
+    attr: str
+        Target attribute.
+    value: str
+        Search value.
+    db_dir: Path, optional
+        Database directory where the table exists.
+    funcname: str, optional ["get"]
+        Search method.
+    """
+    if db_dir is None:
+        db_dir = Path.cwd()
+    else:
+        db_dir = Path(db_dir)
+
+    table = CapnpTable(
+        db_dir=db_dir,
+        tablename=tablename
+    )
+
+    writer = csv.writer(sys.stdout)
+    labels = None
+    try:
+        for record in table.search_records_on(
+                attr=attr,
+                value=value,
+                funcname=funcname):
+
+            record = record.to_dict()
+            if labels is None:
+                labels = record.keys()
+                writer.writerow(labels)
+
+            writer.writerow(record.values())
+
+    except PortableTab.exceptions.NoIndexError:
+        print("No index has been created.", file=sys.stderr)
+        exit(1)
+
+
 def main():
     args = docopt(HELP)
 
@@ -114,11 +174,11 @@ def main():
 
     if args['dump']:
         dump_table(
-            db_dir=args["--db-dir"],
             tablename=args["<tablename>"],
             f=int(args["-f"]),
             n=int(args["-n"]),
-            t=int(args["-t"]) if args["-t"] else None
+            t=int(args["-t"]) if args["-t"] else None,
+            db_dir=args["--db-dir"],
         )
         exit(0)
 
@@ -127,6 +187,21 @@ def main():
             db_dir=args["--db-dir"]
         )
         exit(0)
+
+    if args['search']:
+        funcname = "get"
+        if args["--keys"] is True:
+            funcname = "keys"
+        elif args["--prefixes"] is True:
+            funcname = "prefixes"
+
+        search_records(
+            tablename=args["<tablename>"],
+            attr=args["<attr>"],
+            value=args["<value>"],
+            funcname=funcname,
+            db_dir=args["--db-dir"],
+        )
 
 
 if __name__ == "__main__":
