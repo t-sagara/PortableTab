@@ -96,7 +96,9 @@ class CapnpTable(CapnpManager):
         """
         config = self.get_config()
         module_name = config["module_name"]
+        logger.debug(f"module_name: '{module_name}")
         if module_name not in CapnpManager.modules:
+            logger.debug(f"{module_name} is not in modules, loading schema.")
             CapnpManager.load_schema(
                 self.get_dir() / config["capnp_file"],
                 module_name)

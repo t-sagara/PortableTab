@@ -137,12 +137,14 @@ class CapnpManager(object):
         names: [str], optional
             List of assigned names for the modules to be unloaded.
         """
+        new_modules = {}
         for name, module in cls.modules.items():
             if names is None or name in names:
-                cls.modules[name] = None
                 del module
+            else:
+                new_modules[name] = cls.modules[name]
 
-        cls.modules = {n: m for n, m in cls.modules.items() if m}
+        cls.modules = new_modules
 
     def get_page_mmap(self, page_path: Path) -> mmap.mmap:
         """
