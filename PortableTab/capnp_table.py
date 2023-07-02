@@ -96,9 +96,8 @@ class CapnpTable(CapnpManager):
         """
         config = self.get_config()
         module_name = config["module_name"]
-        logger.debug(f"module_name: '{module_name}")
-        if module_name not in CapnpManager.modules:
-            logger.debug(f"{module_name} is not in modules, loading schema.")
+        if module_name not in CapnpManager.modules or \
+                CapnpManager.modules[module_name] is None:
             CapnpManager.load_schema(
                 self.get_dir() / config["capnp_file"],
                 module_name)
@@ -273,7 +272,7 @@ class CapnpTable(CapnpManager):
             }, fp=f)
 
         # Load this schema once and generate the ID automatically.
-        self._load_capnp_file()
+        CapnpManager.load_schema(copied, self.tablename)
 
         return table_dir
 
