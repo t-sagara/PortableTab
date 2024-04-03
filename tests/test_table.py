@@ -1,7 +1,13 @@
 import csv
+from io import TextIOWrapper
 from pathlib import Path
+import shutil
+from zipfile import ZipFile
 
 from PortableTab import CapnpTable
+
+
+data = []
 
 
 def declare_table(db_dir, tablename):
@@ -35,7 +41,9 @@ struct Customer {
     )
 
 
-def load_data(table: CapnpTable, zip_url: str):
+def load_data(table: CapnpTable, zippath: Path, csvname: str):
+    global data
+    data = []
 
     def record_generator(datapath):
         with ZipFile(datapath) as zipf:
@@ -55,36 +63,22 @@ def load_data(table: CapnpTable, zip_url: str):
                         "industry": row["Industry"],
                         "numberOfEmployees": int(row["Number of employees"]),
                     }
+                    data.append(record)
                     yield record
 
-    from zipfile import ZipFile
-    from io import TextIOWrapper
-    db_dir = table.get_dir().parent
-    zipname = Path(zip_url).name
-    csvname = zipname[:-4] + ".csv"
-    datapath = Path(db_dir) / zipname
-    if not datapath.exists():
-        import urllib.request
-        with urllib.request.urlopen(zip_url) as response, \
-                open(datapath, "wb") as fout:
-            while True:
-                chunk = response.read(8192)
-                if not chunk:
-                    break
-
-                fout.write(chunk)
-
-    table.append_records(record_generator(datapath))
+    table.append_records(record_generator(zippath))
+    return data
 
 
 def random_read(table: CapnpTable):
     import random
     random.seed()
     for _ in range(10):
+        r = random.randrange(table.count_records())
         record = table.get_record(
-            pos=random.randrange(table.count_records()),
+            pos=r,
             as_dict=True)
-        print(record)
+        assert record["name"] == data[r]["name"]
 
 
 def update_records(table: CapnpTable):
@@ -103,16 +97,23 @@ def update_records(table: CapnpTable):
 
 
 def read_record(table: CapnpTable, pos: int):
-    print(table.get_record(pos))
+    record = table.get_record(pos, as_dict=True)
+    return record
 
 
-if __name__ == '__main__':
+def test_all():
     db_dir = Path(__file__).parent / "testdb"
     customer_table = declare_table(db_dir, "customer")
     create_table(customer_table)
     load_data(
         customer_table,
-        "https://github.com/datablist/sample-csv-files/raw/main/files/organizations/organizations-1000000.zip")  # noqa: E501
+        Path(__file__).parent / "organizations-1000.zip",
+        "organizations-1000.csv"
+    )
     random_read(customer_table)
     update_records(customer_table)
-    read_record(customer_table, pos=0)
+    record = customer_table.get_record(pos=0, as_dict=False)
+    assert record.name == "Info-Proto"
+
+    # Clean up
+    shutil.rmtree(db_dir)
