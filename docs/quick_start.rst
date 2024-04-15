@@ -8,7 +8,7 @@ Here is a brief description of basic usage of *PortableTab*.
 Install
 -------
 
-PortableTab requires Python 3.7 or later.
+PortableTab requires Python 3.8 or later.
 
 It can be installed using pip.
 
