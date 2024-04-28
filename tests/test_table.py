@@ -101,6 +101,15 @@ def read_record(table: CapnpTable, pos: int):
     return record
 
 
+EU_COUNTRIES = (
+    "Austria", "Belgium", "Bulgaria", "Croatia", "Republic of Cyprus",
+    "Czech Republic", "Denmark", "Estonia", "Finland", "France",
+    "Germany", "Greece", "Hungary", "Ireland", "Italy", "Latvia",
+    "Lithuania", "Luxembourg", "Malta", "Netherlands", "Poland",
+    "Portugal", "Romania", "Slovakia", "Slovenia", "Spain", "Sweden",
+)
+
+
 def test_all():
     db_dir = Path(__file__).parent / "testdb"
     customer_table = declare_table(db_dir, "customer")
@@ -112,8 +121,24 @@ def test_all():
     )
     random_read(customer_table)
     update_records(customer_table)
+
     record = customer_table.get_record(pos=0, as_dict=False)
     assert record.name == "Info-Proto"
+
+    customer_table.create_trie_on(
+        attr='name',
+        key_func=lambda name: name.lower(),
+        filter_func=lambda record: record.country in EU_COUNTRIES
+    )
+    cands = customer_table.search_records_on(
+        attr="name",
+        value="dun",
+        funcname="keys"
+    )
+    assert len(cands) == 3
+    for cand in cands:
+        assert cand.name.lower().startswith("dun")
+        assert cand.country in EU_COUNTRIES
 
     # Clean up
     shutil.rmtree(db_dir)
