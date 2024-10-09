@@ -354,7 +354,11 @@ class CapnpTable(CapnpManager):
                     if page_path != current_path:
                         break
 
-                    yield list_obj.records[pos % self.PAGE_SIZE]
+                    record = list_obj.records[pos % self.PAGE_SIZE]
+                    if as_dict:
+                        record = record.to_dict()
+
+                    yield record
                     pos += 1
 
             mm.close()
@@ -470,7 +474,8 @@ class CapnpTable(CapnpManager):
     def create_trie_on(
         self,
         attr: str,
-        func: Optional[Callable] = None
+        key_func: Optional[Callable] = None,
+        filter_func: Optional[Callable] = None,
     ) -> None:
         """
         Create TRIE index on the specified attribute.
@@ -479,9 +484,16 @@ class CapnpTable(CapnpManager):
         ---------
         attr: str
             The name of target attribute.
-        func: Callable
-            Function to generate a set of strings to be indexed.
-            If not specified, 'str' will be used.
+        key_func: Callable, optional
+            A function that takes the attribute value as argument
+            used to generate a set of index key strings from each record.
+            If not specified, the 'str' function will be used.
+        filter_func: Callable, optional
+            A function that takes the record as argument to determine
+            if the record should be added to the index or not.
+            When the function returns true (in the context of Boolean
+            operation), the record will be indexed.
+            If not specified, all records will be indexed.
 
         Notes
         -----
@@ -498,10 +510,13 @@ class CapnpTable(CapnpManager):
                 if pos == 0 and not hasattr(record, attr):
                     raise ValueError(f"Attribute '{attr}' doesn't exist.")
 
-                if func is None:
+                if filter_func and not filter_func(record):
+                    continue
+
+                if key_func is None:
                     strings = str(getattr(record, attr))
                 else:
-                    strings = func(getattr(record, attr))
+                    strings = key_func(getattr(record, attr))
 
                 if isinstance(strings, str) and strings != "":
                     yield (strings, (pos,))
