@@ -1,11 +1,11 @@
 # PortableTab
 
-![Python 3.7](https://github.com/t-sagara/PortableTab/actions/workflows/python-3.7.yml/badge.svg)
 ![Python 3.8](https://github.com/t-sagara/PortableTab/actions/workflows/python-3.8.yml/badge.svg)
 ![Python 3.9](https://github.com/t-sagara/PortableTab/actions/workflows/python-3.9.yml/badge.svg)
 ![Python 3.10](https://github.com/t-sagara/PortableTab/actions/workflows/python-3.10.yml/badge.svg)
 ![Python 3.11](https://github.com/t-sagara/PortableTab/actions/workflows/python-3.11.yml/badge.svg)
 ![Python 3.12](https://github.com/t-sagara/PortableTab/actions/workflows/python-3.12.yml/badge.svg)
+![Python 3.13](https://github.com/t-sagara/PortableTab/actions/workflows/python-3.13.yml/badge.svg)
 
 *PortableTab* is a Python library that allows for serialization of 
 typed tables into a set of files, as well as deserialization of
